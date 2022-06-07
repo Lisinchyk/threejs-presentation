@@ -1,14 +1,17 @@
 'use strict';
 
 import { AmbientLight, DirectionalLight } from "three";
+import {MODULES_CONFIG} from "@js/constants";
 
 export const createLights = () => {
-    const lightAmbient = new AmbientLight(0xffffff, 0.5);
-    const dirLight = new DirectionalLight(0xffffff, 0.5);
-    lightAmbient.name = 'lightAmbient';
-    dirLight.name = 'dirLight';
+    const { dirLight, ambientLight } = MODULES_CONFIG;
 
-    dirLight.position.set(4, 4, 5);
+    const lightAmbient = new AmbientLight(ambientLight.color, ambientLight.intensity);
+    lightAmbient.name = ambientLight.name;
 
-    return [dirLight, lightAmbient];
+    const directionLight = new DirectionalLight(dirLight.color, dirLight.intensity);
+    directionLight.name = dirLight.name;
+    directionLight.position.set(...Object.values(dirLight.position));
+
+    return [directionLight, lightAmbient];
 }

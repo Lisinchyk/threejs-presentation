@@ -7,6 +7,7 @@ import { createScene } from "@js/modules/createScene";
 import {statsHelper} from "@js/helpers/stats-helper";
 import {Controls} from "@js/modules/addOrbitControls";
 import {guiHelper} from "@js/helpers/gui-helper";
+import {ENV_THREEJS} from "@js/constants";
 
 export const createEnvironment = () => {
     const canvas = document.getElementById('canvas');
@@ -17,12 +18,21 @@ export const createEnvironment = () => {
 
     const controls = Controls.create(camera, canvas);
     Controls.setup();
+    Controls.disable();
 
     const renderer = Renderer.create(canvas);
     Renderer.setResizeListener(camera);
     Renderer.animation(scene, camera, stats, controls);
 
-    lights.forEach(light => scene.add(light));
+    lights.forEach(light => {
+        ENV_THREEJS.lights = {
+            ...ENV_THREEJS.lights,
+            [light.name]: light,
+        }
+        scene.add(light);
+    });
+
+    ENV_THREEJS.scene = scene;
 
     return {
         canvas,

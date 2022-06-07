@@ -1,6 +1,6 @@
-'strict use';
+'use strict';
 
-import {GUI} from "three/examples/jsm/libs/lil-gui.module.min";
+import { GUI } from "three/examples/jsm/libs/lil-gui.module.min";
 
 const guiHelper = () => {
     return new GUI();

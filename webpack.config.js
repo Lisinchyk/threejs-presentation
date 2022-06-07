@@ -1,4 +1,4 @@
-const webpack = require('webpack');
+// const webpack = require('webpack');
 const path = require('path');
 const HTMLWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
@@ -65,7 +65,7 @@ module.exports = {
         path: path.resolve(__dirname, 'dist'),
     },
     resolve: {
-        extensions: ['.js', '.json', '.jsx', '.png', '.jpg', '.svg', '.fbx'],
+        extensions: ['.js', '.json', '.jsx', '.png', '.jpg', '.jpeg', '.svg', '.fbx'],
         alias: {
             '@': path.resolve(__dirname, 'src'),
             '@scss': path.resolve(__dirname, 'src/scss'),
@@ -84,23 +84,19 @@ module.exports = {
     devtool: isDev ? 'source-map' : '',
     plugins: [
         new HTMLWebpackPlugin({
-            title: "ThreeJS scene",
+            // title: "ThreeJS scene",
             template: './index.html',
             minify: {
                 collapseWhitespace: isProd,
             },
         }),
-        new webpack.ProvidePlugin({
-            '$': "jquery",
-            'jQuery': "jquery",
-        }),
+        // new webpack.ProvidePlugin({
+        //     '$': "jquery",
+        //     'jQuery': "jquery",
+        // }),
 
         new CopyWebpackPlugin({
             patterns: [
-                // {
-                //     from: path.resolve(__dirname, 'src/data.json'),
-                //     to: path.resolve(__dirname, 'dist/data.json')
-                // },
                 {
                     from: path.resolve(__dirname, 'src/assets'),
                     to: path.resolve(__dirname, 'dist/assets')
@@ -123,7 +119,7 @@ module.exports = {
                 use: cssLoaders('sass-loader'),
             },
             {
-                test: /\.(png|jpg|gif|svg)$/,
+                test: /\.(png|jpg|jpeg|gif|svg)$/,
                 use: [
                     {
                         loader: 'file-loader',

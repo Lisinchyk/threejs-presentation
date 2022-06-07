@@ -10,68 +10,146 @@ import {
     MeshPhongMaterial,
     Quaternion,
     SphereGeometry,
-    Vector3
+    Vector3, BoxBufferGeometry, TextureLoader
 } from "three";
-import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
-import { lazyLoadingData } from "@js/modules/functions";
-import {gui} from "@js/helpers/gui-helper";
+
+import {ENV_THREEJS, GUI_CONFIG} from "@js/constants";
+import {removeObjectsFromScene} from "@js/helpers/remove-objects";
+import {Renderer} from "@js/modules/createRender";
+import {lazyLoadingData} from "@js/helpers/loading-data";
 
 export const createElement = ({ data }) => {
+    const { isInstance, isModelLoaded, isBufferGeometry, isCubeLoaded } = GUI_CONFIG;
 
+    removeObjectsFromScene('proteinGroup');
+    Renderer.clear();
 
-    const proteinGroup = new Group();
-    proteinGroup.rotation.set(-0.63, -1.48, -1.47);
-    proteinGroup.name = 'proteinGroup';
-
-    // let isInstance = true;
-    let isInstance = false;
-
-    const geometry = new SphereGeometry( data[0].radius, 15, 15 );
-
-    if (isInstance) {
-        const sphere = new Mesh( geometry, new MeshPhongMaterial({color: data[0].color, shininess: 0}));
-        sphere.scale.set(1.28, 1.28, 1.28);
-
-        const rotation = new Euler(sphere.rotation.x, sphere.rotation.y, sphere.rotation.z, 'XYZ');
-        const rotationQ = new Quaternion().setFromEuler(rotation);
-        const matrix = new Matrix4();
-        const scale = new Vector3(sphere.scale.x, sphere.scale.y, sphere.scale.z);
-        let position;
-        const count = data.length;
-
-        const instance = new InstancedMesh(sphere.geometry, sphere.material, count);
-        instance.instanceMatrix.setUsage(DynamicDrawUsage);
-
-        for (let i = 0; i < count; i++) {
-            const {x, y, z} = data[i].position;
-
-            position = new Vector3(x, y, z);
-            matrix.compose(position, rotationQ, scale);
-            instance.setMatrixAt(i, matrix);
-            instance.setColorAt(i, new Color(data[i].color.r, data[i].color.g, data[i].color.b));
-        }
-
-        proteinGroup.add(instance);
-    } else {
-        for (let sphere of data) {
-            const { color: {r, g, b}, position: {x, y, z} } = sphere;
-            const scale = 1.28;
-
-            const mesh = new Mesh(geometry, new MeshPhongMaterial({shininess: 0}));
-
-            mesh.position.set(x, y, z);
-            mesh.scale.set(scale, scale, scale);
-            mesh.material.color.setRGB(r, g, b);
-
-            proteinGroup.add(mesh);
-        }
+    if (isCubeLoaded) {
+        return createBox();
     }
+
+    if (isInstance || isModelLoaded || isBufferGeometry) {
+        const proteinGroup = isInstance
+            ? createInstanceObject(data)
+            : createObject(data);
+
+        console.log(proteinGroup);
+
+        ENV_THREEJS.model = proteinGroup;
+
+        return proteinGroup;
+    }
+}
+
+const createGroup = (name, position) => {
+    const { x, y, z } = position;
+
+    const group = new Group();
+    group.rotation.set(x, y, z);
+    group.name = name;
+
+    return group;
+}
+
+const createMesh = ({ radius, color, scale }) => {
+    const sphere = new Mesh(
+        new SphereGeometry( radius, 15, 15 ),
+        new MeshPhongMaterial({color, shininess: 0})
+    );
+
+    sphere.scale.set(scale, scale, scale);
+
+    return sphere;
+}
+
+const createBox = async () => {
+    const size = 150;
+
+    const texture = await lazyLoadingData(new TextureLoader(), "assets/download.png");
+    console.log(texture);
+
+    const proteinGroup = createGroup('proteinGroup', { x: -0.63, y: -1.48, z: -1.47 });
+
+    const geometry = new BoxBufferGeometry(size, size, size);
+    const material = new MeshPhongMaterial({color: 'lightblue', map: texture});
+    // material.map = texture;
+
+    const box = new Mesh(geometry, material);
+
+    proteinGroup.add(box);
+
+    ENV_THREEJS.model = proteinGroup;
 
     console.log(proteinGroup);
 
     return proteinGroup;
 }
 
-export const loadElement = (url) => {
-    return lazyLoadingData(new OBJLoader(), url);
+const createInstanceObject = (data) => {
+    const proteinGroup = createGroup('proteinGroup', { x: -0.63, y: -1.48, z: -1.47 });
+
+    const sphere = createMesh({
+        radius: data[0].radius,
+        color: data[0].color,
+        scale: 1.28
+    });
+
+    let position;
+    const count = data.length;
+    const { rotation, scale, geometry, material } = sphere;
+    const rotationEuler = new Euler(rotation.x, rotation.y, rotation.z, 'XYZ');
+    const rotationQ = new Quaternion().setFromEuler(rotationEuler);
+    const matrix = new Matrix4();
+    const scaleMesh = new Vector3(scale.x, scale.y, scale.z);
+
+    const instance = new InstancedMesh(geometry, material, count);
+    instance.instanceMatrix.setUsage(DynamicDrawUsage);
+
+    for (let i = 0; i < count; i++) {
+        const { x, y, z } = data[i].position;
+        const { r, g, b } = data[i].color;
+
+        position = new Vector3(x, y, z);
+        matrix.compose(position, rotationQ, scaleMesh);
+        instance.setMatrixAt(i, matrix);
+        instance.setColorAt(i, new Color(r, g, b));
+    }
+
+    proteinGroup.add(instance);
+
+    return proteinGroup;
+}
+
+const createObject = (data) => {
+    const { isBufferGeometry } = GUI_CONFIG;
+    const proteinGroup = createGroup('proteinGroup', { x: -0.63, y: -1.48, z: -1.47 });
+
+    const geometry = isBufferGeometry
+        ? new SphereGeometry( data[0].radius, 15, 15 )
+        : null;
+
+    const scale = 1.28;
+
+    for (let sphere of data) {
+        const { color: {r, g, b}, position: {x, y, z} } = sphere;
+
+
+        const material = new MeshPhongMaterial({shininess: 0});
+
+        const mesh = (geometry !== null)
+            ? new Mesh(geometry, material)
+            : createMesh({
+                radius: sphere.radius,
+                color: {r, g, b},
+                scale
+            });
+
+        mesh.position.set(x, y, z);
+        mesh.scale.set(scale, scale, scale);
+        mesh.material.color.setRGB(r, g, b);
+
+        proteinGroup.add(mesh);
+    }
+
+    return proteinGroup;
 }
